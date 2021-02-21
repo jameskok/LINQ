@@ -1,2 +1,2 @@
 # LINQ
-https://www.kaggle.com/sobhanmoosavi/us-weather-events#
+ссылка на дс с кангла: https://www.kaggle.com/sobhanmoosavi/us-weather-events#
