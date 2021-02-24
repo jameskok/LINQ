@@ -1,10 +1,20 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Linq;
 using System.Collections.Generic;
 
 namespace semLinqTask
 {
+    public static class IEnumerableExtention
+    {
+        public static void PrintCollection<T>(this IEnumerable<T> collection)
+        {
+            foreach (var elem in collection)
+            {
+                Console.WriteLine(elem);
+            }
+        }
+    }
     class Program
     {
         static void Main(string[] args)
@@ -21,7 +31,6 @@ namespace semLinqTask
             //1. Сколько записей за каждый из годов имеется в датасете.
             //Потом будут еще запросы
 
-
             WeatherEvent we = new WeatherEvent()
             {
                 EventId = "W-1",
@@ -30,7 +39,6 @@ namespace semLinqTask
                 StartTime = DateTime.Now
             };
 
- 
             string file_path = "../../../Data.csv";
 
             List<WeatherEvent> arr = new List<WeatherEvent>();
@@ -65,24 +73,16 @@ namespace semLinqTask
                 .GroupBy(elem => elem.StartTime.Year)
                 .Select(g => new { Year = g.Key, Quantity = g.Count() });
 
-            foreach (var pair in entryPerYear1)
-            {
-                Console.WriteLine($"{pair.Year}\t{pair.Quantity}");
-            }
+            entryPerYear1.PrintCollection();
 
             Console.WriteLine(new string('-', 5));
-
 
             var entryPerYear2 =
                 from elem in arr
                 group elem by elem.StartTime.Year into yearGroup
                 select new { Year = yearGroup.Key, Quantity = yearGroup.Count() };
 
-
-            foreach (var pair in entryPerYear2)
-            {
-                Console.WriteLine($"{pair.Year}\t{pair.Quantity}");
-            }
+            entryPerYear2.PrintCollection();
             #endregion
 
             #region 2. Вывести количество зафиксированных природных явлений в Америке в 2018 году
@@ -98,21 +98,15 @@ namespace semLinqTask
                             where elem.StartTime.Year == 2018
                             group elem by elem.Type).Count();
 
-
             var TypeInfo =
                  from elem in arr
                  where elem.StartTime.Year == 2018
                  group elem by elem.Type into g
-                 select new { Type = g.Key, Q = g.Count() };
-
-
+                 select new { WeatherEventType = g.Key, Quantity = g.Count() };
 
             Console.WriteLine(typeCnt1);
             Console.WriteLine(typeCnt2);
-            foreach (var pair in TypeInfo)
-            {
-                Console.WriteLine($"{pair.Type} {pair.Q}");
-            }
+            TypeInfo.PrintCollection();
             #endregion
 
             #region 3.Вывести топ 3 самых дождливых города в 2019 году в порядке убывания количества дождей (вывести город и количество дождей)
@@ -123,43 +117,22 @@ namespace semLinqTask
                 elem.Type == WeatherEventType.Rain)
                 .GroupBy(elem => elem.City)
                 .Select(g => new { City = g.Key, Quantity = g.Count() })
-                .OrderByDescending(pair => pair.Quantity);
+                .OrderByDescending(pair => pair.Quantity)
+                .Take(3);
 
             var rainCities2 =
-                from elem in arr
-                where elem.StartTime.Year == 2019 && elem.Type == WeatherEventType.Rain
-                group elem by elem.City into g
-                select new { City = g.Key, Quantity = g.Count() } into pair
-                orderby pair.Quantity descending
-                select pair;
+                (from elem in arr
+                 where elem.StartTime.Year == 2019 && elem.Type == WeatherEventType.Rain
+                 group elem by elem.City into g
+                 select new { City = g.Key, Quantity = g.Count() } into pair
+                 orderby pair.Quantity descending
+                 select pair).Take(3);
 
-
-
-            int n = 3, step;
-
-            step = 0;
-            foreach(var pair in rainCities1)
-            {
-                if(step == n)
-                {
-                    break;
-                }
-                Console.WriteLine($"{pair.City} {pair.Quantity}");
-                step++;
-            }
+            rainCities1.PrintCollection();
 
             Console.WriteLine(new string('-', 5));
-            step = 0;
-            foreach (var pair in rainCities2)
-            {
-                if (step == n)
-                {
-                    break;
-                }
-                Console.WriteLine($"{pair.City} {pair.Quantity}");
-                step++;
-            }
 
+            rainCities2.PrintCollection();
 
             #endregion
 
@@ -171,8 +144,13 @@ namespace semLinqTask
                 .Where(elem => elem.Type == WeatherEventType.Snow)
                 .GroupBy(elem => elem.StartTime.Year)
                 .Select(g => g.OrderByDescending(elem => elem.EndTime - elem.StartTime))
-                .Select(g => new {g.First().StartTime.Year, g.First().StartTime, 
-                    g.First().EndTime, g.First().City });
+                .Select(g => new
+                {
+                    g.First().StartTime.Year,
+                    g.First().StartTime,
+                    g.First().EndTime,
+                    g.First().City
+                });
 
             var longSnowCol2 =
                 from elem in arr
@@ -182,23 +160,17 @@ namespace semLinqTask
                 let f = g.First()
                 select new { f.StartTime.Year, f.StartTime, f.EndTime, f.City };
 
-            foreach (var ev in longSnowCol1)
-            {
-                Console.WriteLine($"{ev.Year}: In {ev.City}, from {ev.StartTime} to {ev.EndTime}");
-            }
+            longSnowCol1.PrintCollection();
 
             Console.WriteLine(new string('-', 5));
 
-            foreach (var ev in longSnowCol2)
-            {
-                Console.WriteLine($"{ev.Year}: In {ev.City}, from {ev.StartTime} to {ev.EndTime}");
-            }
+            longSnowCol2.PrintCollection();
 
             #endregion
         }
     }
 
-    //Дополнить модеь, согласно данным из файла
+    //Дополнить модель, согласно данным из файла
     class WeatherEvent
     {
         public string EventId { get; set; }
@@ -215,10 +187,6 @@ namespace semLinqTask
         public string State { get; set; }
         public string ZipCode { get; set; }
         public WeatherEvent() { }
-
-
-
-
         public WeatherEvent(string inp)
         {
             var inpArr = inp.Split(',');
@@ -241,7 +209,6 @@ namespace semLinqTask
             TimeZone = inpArr[5];
             AirportCode = inpArr[6];
 
-
             double.TryParse(inpArr[7], out double Lat);
             double.TryParse(inpArr[8], out double Lng);
 
@@ -252,10 +219,7 @@ namespace semLinqTask
             County = inpArr[10];
             State = inpArr[11];
             ZipCode = inpArr[12];
-
         }
-
-
         WeatherEventType ParseEventType(string inp)
         {
             return inp switch
@@ -270,8 +234,6 @@ namespace semLinqTask
                 _ => WeatherEventType.Unknown
             };
         }
-
-
         Severity ParseSeverity(string inp)
         {
             return inp switch
@@ -285,8 +247,6 @@ namespace semLinqTask
                 _ => Severity.Unknown
             };
         }
-
-
         public override string ToString()
         {
             return $"Id: {EventId}\tType: {Type}\t" +
@@ -307,7 +267,6 @@ namespace semLinqTask
         Storm,
         Precipitation
     }
-
     enum Severity
     {
         Unknown,
