@@ -252,7 +252,6 @@ namespace semLinqTask
             return $"Id: {EventId}\tType: {Type}\t" +
                 $"Severity: {Severity}\tDate: {StartTime}";
         }
-
     }
 
     //Дополнить перечисления
